@@ -10,10 +10,16 @@
 #include <main.h>
 #include <motors.h>
 #include <camera/po8030.h>
+#include <sensors/proximity.h>
 #include <chprintf.h>
 
+#include <ir_driver.h>
 #include <control_motor.h>
 #include <process_image.h>
+
+messagebus_t bus;
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size)
 {
@@ -41,19 +47,24 @@ int main(void)
     chSysInit();
     mpu_init();
 
+    messagebus_init(&bus, &bus_lock, &bus_condvar);
+
     //starts the serial communication
-    //serial_start();
+    serial_start();
     //start the USB communication
-    //usb_start();
+    usb_start();
     //starts the camera
     dcmi_start();
 	po8030_start();
 	//inits the motors
 	motors_init();
+	//starts the ir sensors
+	proximity_start();
 
 	//stars the threads for the pi regulator and the processing of the image
 	control_motor_start();
 	process_image_start();
+	ir_analyse_start();
 
 
     /* Infinite loop. */

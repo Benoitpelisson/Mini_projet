@@ -9,6 +9,7 @@
 #include <motors.h>
 #include <control_motor.h>
 #include <process_image.h>
+#include <ir_driver.h>
 
 #define VITESSE_MOTOR 500
 
@@ -54,15 +55,20 @@ static THD_FUNCTION(ControlDirection, arg) {
     while(1){
         time = chVTGetSystemTime();
 
-
-        if(get_line_detected() == 1)
+        if(object_check() == 0)
         {
-        	//stop_motor(); 1st version
-        	turn_right();
+			if(get_line_detected() == 1)
+			{
+				//stop_motor(); 1st version
+				turn_right();
+			}
+			else
+				avancer();
         }
         else
-        	avancer();
-
+        {
+        	stop_motor();
+        }
 
         //100Hz
         chThdSleepUntilWindowed(time, time + MS2ST(10));
