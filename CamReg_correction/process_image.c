@@ -8,8 +8,8 @@
 
 #include <process_image.h>
 
-#define MIN 24
-
+#define THRESHOLD 40		//previously 24
+#define MARGIN 50
 static uint8_t line_detected = 0;
 
 
@@ -20,18 +20,31 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
  *  Returns the line's width extracted from the image buffer given
  *  Returns 0 if line not found
  */
-uint16_t extract_info_line(uint8_t *buffer){
+uint8_t extract_info_line(uint8_t *buffer){
 
 	uint8_t line_in_front = 0;
-
-	line_in_front = 1;
-
+	uint16_t count = 0;
+	//uint32_t mean = 0;
 	//check if there is a black line in front
-	for(uint16_t i = 0 ; i < IMAGE_BUFFER_SIZE ; i++){
-		if(buffer[i] > MIN) line_in_front = 0;
+	/*for(uint16_t j =0 ; j < IMAGE_BUFFER_SIZE ; j++)
+	{
+		mean += buffer[j];
+	}
+	mean = mean/(IMAGE_BUFFER_SIZE);*/
 
+	for(uint16_t i = 0 ; i < IMAGE_BUFFER_SIZE ; i++)
+	{
+		if(buffer[i] < THRESHOLD) //previously threshhold
+		{
+			count++;
+		}
+
+	}
+	if(count >= MARGIN)
+	{
+		line_in_front = 1;
+	}
 	return line_in_front;
-}
 }
 static THD_WORKING_AREA(waCaptureImage, 256);
 static THD_FUNCTION(CaptureImage, arg) {
@@ -39,8 +52,8 @@ static THD_FUNCTION(CaptureImage, arg) {
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
 
-	//Takes pixels 0 to IMAGE_BUFFER_SIZE of the line 119+120 (minimum 2 lines because reasons)
-	po8030_advanced_config(FORMAT_RGB565, 0, 119, IMAGE_BUFFER_SIZE, 2, SUBSAMPLING_X1, SUBSAMPLING_X1);
+	//Takes pixels 0 to IMAGE_BUFFER_SIZE of the line 475+476 (minimum 2 lines because reasons)
+	po8030_advanced_config(FORMAT_RGB565, 0, 475, IMAGE_BUFFER_SIZE, 2, SUBSAMPLING_X1, SUBSAMPLING_X1);
 	dcmi_enable_double_buffering();
 	dcmi_set_capture_mode(CAPTURE_ONE_SHOT);
 	dcmi_prepare();
@@ -64,6 +77,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 	uint8_t *img_buff_ptr;
 	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
+	//bool send_to_computer = 1;
 
     while(1){
     	//waits until an image has been captured
@@ -83,12 +97,12 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 
 
-//		if(send_to_computer){
-//			//sends to the computer the image
-//			SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
-//		}
-//		//invert the bool
-//		send_to_computer = !send_to_computer;
+		/*if(send_to_computer){
+			//sends to the computer the image
+			SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
+		}
+		//invert the bool
+		send_to_computer = !send_to_computer;*/
     }
 }
 

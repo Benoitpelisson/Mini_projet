@@ -22,7 +22,7 @@ void stop_motor()
 void turn_right()
 {
 	right_motor_set_speed(VITESSE_MOTOR);
-	left_motor_set_speed(VITESSE_MOTOR);
+	left_motor_set_speed(-VITESSE_MOTOR);
 }
 
 void turn_left()
@@ -34,7 +34,7 @@ void turn_left()
 void avancer()
 {
 	right_motor_set_speed(VITESSE_MOTOR);
-	left_motor_set_speed(-VITESSE_MOTOR);
+	left_motor_set_speed(VITESSE_MOTOR);
 }
 
 void reculer()
@@ -56,7 +56,10 @@ static THD_FUNCTION(ControlDirection, arg) {
 
 
         if(get_line_detected() == 1)
-        	stop_motor();
+        {
+        	//stop_motor(); 1st version
+        	turn_right();
+        }
         else
         	avancer();
 
