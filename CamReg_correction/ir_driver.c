@@ -11,6 +11,7 @@
 #define IR_THRESHOLD 3000
 
 static uint8_t object = 0;
+static uint8_t sensor_number = 0;
 
 static THD_WORKING_AREA(wair_analyse, 1024);
 static THD_FUNCTION(ir_analyse, arg) {
@@ -32,6 +33,7 @@ static THD_FUNCTION(ir_analyse, arg) {
 			if(get_prox(i) > IR_THRESHOLD)
 			{
 				object = 1;
+				sensor_number = i;
 			}
 		}
 		chThdSleepUntilWindowed(time, time + MS2ST(10));
@@ -40,9 +42,17 @@ static THD_FUNCTION(ir_analyse, arg) {
 
 }
 
+
+//says if an object has been detected
 uint8_t object_check (void)
 {
 	return object;
+}
+
+//says which sensor detected the object
+uint8_t sensor_feedback(void)
+{
+	return sensor_number;
 }
 
 void ir_analyse_start(void){
