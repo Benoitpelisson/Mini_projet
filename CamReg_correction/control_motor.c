@@ -52,16 +52,23 @@ void escape_obstacle_right(void){
 	{
 		if(object_check() == DETECTED)
 		{
+			systime_t time;
 			switch(sensor_feedback())
 			        			{
 			        			case 0:
+			        				time = chVTGetSystemTime();
 			        				turn_left();
+			        				chThdSleepUntilWindowed(time, time + MS2ST(500));
 			        				break;
 			        			case 1:
+			        				time = chVTGetSystemTime();
 			        				turn_left();
+			        				chThdSleepUntilWindowed(time, time + MS2ST(332));
 			        				break;
 			        			case 2:
+			        				time = chVTGetSystemTime();
 			        				avancer();
+			        				chThdSleepUntilWindowed(time, time + MS2ST(166));
 			        				break;
 			        			case 3:
 			        				break;
@@ -77,15 +84,7 @@ void escape_obstacle_right(void){
 		}
 		else
 		{
-			systime_t time;
-			time = chVTGetSystemTime();
-			avancer();
-			chThdSleepUntilWindowed(time, time + MS2ST(1500));
-			turn_right();
-			time = chVTGetSystemTime();
-			chThdSleepUntilWindowed(time, time + MS2ST(500));
 			break;
-			//avancer encore quelques temps
 		}
 	}
 }
@@ -96,6 +95,7 @@ void escape_obstacle_left(void){
 	{
 		if(object_check() == DETECTED)
 		{
+			systime_t time;
 			switch(sensor_feedback())
 			        			{
 			        			case 0:
@@ -109,26 +109,25 @@ void escape_obstacle_left(void){
 			        			case 4:
 			        				break;
 			        			case 5:
+			        				time = chVTGetSystemTime();
 			        				avancer();
+			        				chThdSleepUntilWindowed(time, time + MS2ST(166));
 			        				break;
 			        			case 6:
+			        				time = chVTGetSystemTime();
 			        				turn_right();
+			        				chThdSleepUntilWindowed(time, time + MS2ST(332));
 			        				break;
 			        			case 7:
+			        				time = chVTGetSystemTime();
 			        				turn_right();
+			        				chThdSleepUntilWindowed(time, time + MS2ST(500));
 			        				break;
 			        			}
 		}
 		else
 		{
-			systime_t time;
-			time = chVTGetSystemTime();
-			avancer();
-			chThdSleepUntilWindowed(time, time + MS2ST(1500));
-			turn_left();
-			time = chVTGetSystemTime();
-			chThdSleepUntilWindowed(time, time + MS2ST(500));
-			break;
+				break;
 			//avancer encore quelques temps
 		}
 	}
