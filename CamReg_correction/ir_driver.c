@@ -8,7 +8,7 @@
 
 #include <ir_driver.h>
 
-#define IR_THRESHOLD 3000
+#define IR_THRESHOLD 2000 //threshold is fixed in order for the robot to try and avoid touching objects, previously 3000
 
 static uint8_t object = 0;
 static uint8_t sensor_number = 0;

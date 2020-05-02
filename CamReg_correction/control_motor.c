@@ -77,12 +77,62 @@ void escape_obstacle_right(void){
 		}
 		else
 		{
+			systime_t time;
+			time = chVTGetSystemTime();
+			avancer();
+			chThdSleepUntilWindowed(time, time + MS2ST(1500));
+			turn_right();
+			time = chVTGetSystemTime();
+			chThdSleepUntilWindowed(time, time + MS2ST(500));
 			break;
 			//avancer encore quelques temps
 		}
 	}
 }
 
+
+void escape_obstacle_left(void){
+	while(1)
+	{
+		if(object_check() == DETECTED)
+		{
+			switch(sensor_feedback())
+			        			{
+			        			case 0:
+			        				break;
+			        			case 1:
+			        				break;
+			        			case 2:
+			        				break;
+			        			case 3:
+			        				break;
+			        			case 4:
+			        				break;
+			        			case 5:
+			        				avancer();
+			        				break;
+			        			case 6:
+			        				turn_right();
+			        				break;
+			        			case 7:
+			        				turn_right();
+			        				break;
+			        			}
+		}
+		else
+		{
+			systime_t time;
+			time = chVTGetSystemTime();
+			avancer();
+			chThdSleepUntilWindowed(time, time + MS2ST(1500));
+			turn_left();
+			time = chVTGetSystemTime();
+			chThdSleepUntilWindowed(time, time + MS2ST(500));
+			break;
+			//avancer encore quelques temps
+		}
+	}
+}
 static THD_WORKING_AREA(waControlDirection, 256);
 static THD_FUNCTION(ControlDirection, arg) {
 
@@ -97,6 +147,7 @@ static THD_FUNCTION(ControlDirection, arg) {
         if(object_check() == UNDETECTED)
         {
         	set_led( 1 , 0);
+        	set_led( 3 , 0);
 			if(get_line_detected() == DETECTED)
 			{
 				//stop_motor(); 1st version
@@ -108,6 +159,7 @@ static THD_FUNCTION(ControlDirection, arg) {
         else
         {
         	set_led( 1 , 2);
+        	set_led( 3 , 2);
         	switch(sensor_feedback())
         			{
         			case 0:
@@ -124,13 +176,13 @@ static THD_FUNCTION(ControlDirection, arg) {
         			case 4:
         				break;
         			case 5:
-        				turn_right();
+        				escape_obstacle_left();
         				break;
         			case 6:
-        				turn_right();
+        				escape_obstacle_left();
         				break;
         			case 7:
-        				turn_right();
+        				escape_obstacle_left();
         				break;
         			}
         }
