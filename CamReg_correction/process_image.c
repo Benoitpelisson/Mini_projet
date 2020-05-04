@@ -8,8 +8,8 @@
 
 #include <process_image.h>
 
-#define THRESHOLD 40		//previously 24
-#define MARGIN 50
+#define THRESHOLD 25		//previously 40
+#define MARGIN 100 //previously 50
 static uint8_t line_detected = 0;
 
 

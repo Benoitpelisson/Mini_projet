@@ -17,6 +17,10 @@
 #define UNDETECTED 0
 #define	SCAN_LEFT 0
 #define	SCAN_RIGHT 1
+#define LEFT_SENSOR 5
+#define RIGHT_SENSOR 2
+#define EPUCK_RADIUS 539
+#define RADIUS_MARGIN 50
 
 static bool comeback = 0;
 static uint8_t epuck_scan_direction;
@@ -53,6 +57,14 @@ void reculer()
 	left_motor_set_speed(-VITESSE_MOTOR);
 }
 
+void avancer_ms(uint16_t command)
+{
+	systime_t time;
+	avancer();
+	time = chVTGetSystemTime();
+	chThdSleepUntilWindowed(time, time + MS2ST(command));
+}
+
 void ninety_turn_right(void){
 	systime_t time;
 	turn_right();
@@ -64,7 +76,7 @@ void forward_turn_right(void){
 	systime_t time;
 	avancer();
 	time = chVTGetSystemTime();
-	chThdSleepUntilWindowed(time, time + MS2ST(1000));//DEFINE
+	chThdSleepUntilWindowed(time, time + MS2ST(EPUCK_RADIUS));//DEFINE
 	turn_right();
 	time = chVTGetSystemTime();
 	chThdSleepUntilWindowed(time, time + MS2ST(640));//DEFINE
@@ -81,7 +93,7 @@ void forward_turn_left(void){
 	systime_t time;
 	avancer();
 	time = chVTGetSystemTime();
-	chThdSleepUntilWindowed(time, time + MS2ST(1000));//DEFINE
+	chThdSleepUntilWindowed(time, time + MS2ST(EPUCK_RADIUS));//DEFINE
 	turn_left();
 	time = chVTGetSystemTime();
 	chThdSleepUntilWindowed(time, time + MS2ST(640));//DEFINE
@@ -172,89 +184,51 @@ void scan_right(void){
 }
 
 void escape_obstacle_right(void){
-	while(1)
+	systime_t time1;
+	systime_t time2;
+	systime_t timesizeobject; //necessary time to come back to original "line" of progression
+	time1 = chVTGetSystemTime();
+	ninety_turn_left();
+	while((object_check() == DETECTED) && (sensor_feedback() == RIGHT_SENSOR))
 	{
-		if(object_check() == DETECTED)
-		{
-			systime_t time;
-			switch(sensor_feedback())
-			        			{
-			        			case 0:
-			        				time = chVTGetSystemTime();
-			        				turn_left();
-			        				chThdSleepUntilWindowed(time, time + MS2ST(500));
-			        				break;
-			        			case 1:
-			        				time = chVTGetSystemTime();
-			        				turn_left();
-			        				chThdSleepUntilWindowed(time, time + MS2ST(332));
-			        				break;
-			        			case 2:
-			        				time = chVTGetSystemTime();
-			        				avancer();
-			        				chThdSleepUntilWindowed(time, time + MS2ST(166));
-			        				break;
-			        			case 3:
-			        				break;
-			        			case 4:
-			        				break;
-			        			case 5:
-			        				break;
-			        			case 6:
-			        				break;
-			        			case 7:
-			        				break;
-			        			}
-		}
-		else
-		{
-			break;
-		}
+		avancer();
 	}
+	time2 = chVTGetSystemTime();
+	timesizeobject = time2-time1;
+	forward_turn_right();
+	avancer_ms(2000);
+	while((object_check() == DETECTED) && (sensor_feedback() == RIGHT_SENSOR))
+	{
+		avancer();
+	}
+	forward_turn_right();
+	avancer_ms(timesizeobject);
+	ninety_turn_left();
 }
 
 
 void escape_obstacle_left(void){
-	while(1)
+	systime_t time1;
+	systime_t time2;
+	systime_t timesizeobject;
+	time1 = chVTGetSystemTime();
+	ninety_turn_right();
+	while((object_check() == DETECTED) && (sensor_feedback() == LEFT_SENSOR))
 	{
-		if(object_check() == DETECTED)
-		{
-			systime_t time;
-			switch(sensor_feedback())
-			        			{
-			        			case 0:
-			        				break;
-			        			case 1:
-			        				break;
-			        			case 2:
-			        				break;
-			        			case 3:
-			        				break;
-			        			case 4:
-			        				break;
-			        			case 5:
-			        				time = chVTGetSystemTime();
-			        				avancer();
-			        				chThdSleepUntilWindowed(time, time + MS2ST(166));
-			        				break;
-			        			case 6:
-			        				time = chVTGetSystemTime();
-			        				turn_right();
-			        				chThdSleepUntilWindowed(time, time + MS2ST(332));
-			        				break;
-			        			case 7:
-			        				time = chVTGetSystemTime();
-			        				turn_right();
-			        				chThdSleepUntilWindowed(time, time + MS2ST(500));
-			        				break;
-			        			}
-		}
-		else
-		{
-				break;
-			//avancer encore quelques temps
-		}
+		avancer();
 	}
+	time2 = chVTGetSystemTime();
+	timesizeobject = time2-time1;
+	forward_turn_left();
+	avancer_ms(2000); //EPUCK_RADIUS+RADIUS_MARGIN
+	while((object_check() == DETECTED) && (sensor_feedback() == LEFT_SENSOR))
+	{
+		avancer();
+	}
+	forward_turn_left();
+	avancer_ms(timesizeobject);
+	ninety_turn_right();
+
 }
 static THD_WORKING_AREA(waControlDirection, 256);
 static THD_FUNCTION(ControlDirection, arg) {
@@ -316,7 +290,7 @@ static THD_FUNCTION(ControlDirection, arg) {
 		{
 			set_led( 1 , 2);
 			set_led( 3 , 2);
-			switch(sensor_feedback())
+			/*switch(sensor_feedback())
 					{
 					case 0:
 						escape_obstacle_right();
@@ -325,14 +299,12 @@ static THD_FUNCTION(ControlDirection, arg) {
 						escape_obstacle_right();
 						break;
 					case 2:
-						escape_obstacle_right();
 						break;
 					case 3:
 						break;
 					case 4:
 						break;
 					case 5:
-						escape_obstacle_left();
 						break;
 					case 6:
 						escape_obstacle_left();
@@ -340,7 +312,18 @@ static THD_FUNCTION(ControlDirection, arg) {
 					case 7:
 						escape_obstacle_left();
 						break;
-					}
+					}*/
+			if(epuck_scan_direction == SCAN_LEFT){
+				set_led( 1 , 2);
+				scan_left();
+				set_led( 1 , 0);
+			}
+			if(epuck_scan_direction == SCAN_RIGHT){
+				set_led( 3 , 2);
+				scan_right();
+				set_led( 3 , 0);
+			}
+
 		}
         //100Hz
         chThdSleepUntilWindowed(time, time + MS2ST(10));
