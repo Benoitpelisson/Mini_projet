@@ -9,7 +9,7 @@
 #include <process_image.h>
 
 #define THRESHOLD 25		//previously 40
-#define MARGIN 100 //previously 50
+#define MARGIN 200 //previously 100
 static uint8_t line_detected = 0;
 
 
@@ -53,7 +53,7 @@ static THD_FUNCTION(CaptureImage, arg) {
     (void)arg;
 
 	//Takes pixels 0 to IMAGE_BUFFER_SIZE of the line 475+476 (minimum 2 lines because reasons)
-	po8030_advanced_config(FORMAT_RGB565, 0, 460, IMAGE_BUFFER_SIZE, 2, SUBSAMPLING_X1, SUBSAMPLING_X1); //previously 475
+	po8030_advanced_config(FORMAT_RGB565, 0, 475, IMAGE_BUFFER_SIZE, 2, SUBSAMPLING_X1, SUBSAMPLING_X1); //previously 475
 	dcmi_enable_double_buffering();
 	dcmi_set_capture_mode(CAPTURE_ONE_SHOT);
 	dcmi_prepare();
