@@ -14,6 +14,7 @@ CSRC += ./main.c \
 		./process_image.c \
 		./control_motor.c \
 		./ir_driver.c \
+		./TOF_driver.c \
 #Header folders to include
 INCDIR += 
 

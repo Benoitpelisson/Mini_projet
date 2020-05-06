@@ -12,6 +12,8 @@
 #include <ir_driver.h>
 #include <leds.h>
 
+#include <TOF_driver.h>
+
 #define VITESSE_MOTOR 500
 #define DETECTED 1
 #define UNDETECTED 0
@@ -25,6 +27,11 @@
 #define ESCAPE_OBJECT 300
 #define PASS 380 //arbitrary for now
 #define INF_DIST 10
+#define LED_ON 2
+#define LED_OFF 0
+#define REAR_LEFT 4
+#define REAR_RIGHT 3
+
 
 static bool comeback = 0;
 static uint8_t epuck_scan_direction;
@@ -150,6 +157,7 @@ uint8_t analysing_situation(void){
 		return SCAN_LEFT;
 	if(can_go_right)
 		return SCAN_RIGHT;
+	return SCAN_LEFT;//check next time
 }
 
 void scan_left(void){
@@ -232,53 +240,6 @@ void scan_right(void){
 
 }
 
-void escape_obstacle_right(void){
-	systime_t time1;
-	systime_t time2;
-	systime_t timesizeobject; //necessary time to come back to original "line" of progression
-	time1 = chVTGetSystemTime();
-	ninety_turn_left();
-	while((object_check() == DETECTED) && (sensor_feedback() == RIGHT_SENSOR))
-	{
-		avancer();
-	}
-	time2 = chVTGetSystemTime();
-	timesizeobject = time2-time1;
-	forward_turn_right();
-	avancer_ms(2000);
-	while((object_check() == DETECTED) && (sensor_feedback() == RIGHT_SENSOR))
-	{
-		avancer();
-	}
-	forward_turn_right();
-	avancer_ms(timesizeobject);
-	ninety_turn_left();
-}
-
-
-void escape_obstacle_left(void){
-	systime_t time1;
-	systime_t time2;
-	systime_t timesizeobject;
-	time1 = chVTGetSystemTime();
-	ninety_turn_right();
-	while((object_check() == DETECTED) && (sensor_feedback() == LEFT_SENSOR))
-	{
-		avancer();
-	}
-	time2 = chVTGetSystemTime();
-	timesizeobject = time2-time1;
-	forward_turn_left();
-	avancer_ms(2000); //EPUCK_RADIUS+RADIUS_MARGIN
-	while((object_check() == DETECTED) && (sensor_feedback() == LEFT_SENSOR))
-	{
-		avancer();
-	}
-	forward_turn_left();
-	avancer_ms(timesizeobject);
-	ninety_turn_right();
-
-}
 static THD_WORKING_AREA(waControlDirection, 256);
 static THD_FUNCTION(ControlDirection, arg) {
 
@@ -294,20 +255,20 @@ static THD_FUNCTION(ControlDirection, arg) {
 
     while(1){
         time = chVTGetSystemTime();
-		if(object_check() == UNDETECTED)
+		if((object_check() == DETECTED) && ((sensor_feedback() == REAR_LEFT) || (sensor_feedback() == REAR_RIGHT)))
+			stop(100);
+		if(TOF_check() == UNDETECTED)
 		{
-			set_led( 1 , 0);
-			set_led( 3 , 0);
 			if(get_line_detected() == DETECTED)
 			{
-				//avancer_ms(FINISH_MARGIN); WARNING, THIS IS TO BE TESTED
+				//avancer_ms(FINISH_MARGIN); //WARNING, THIS IS TO BE TESTED
 				if(!first_collision)
 				{
 					epuck_scan_direction = analysing_situation();
 					first_collision = 1;
 				}
 				if(epuck_scan_direction == SCAN_LEFT){
-					if(object_check() == DETECTED)
+					if(object_check() == DETECTED)//if tof didnt detect the obstacle, i.e the obstacle isnt directly in front of epuck
 						reculer_ms(EPUCK_RADIUS);
 					set_led( 1 , 2);
 					scan_left();
@@ -328,39 +289,23 @@ static THD_FUNCTION(ControlDirection, arg) {
 		}
 		else
 		{
-			set_led( 1 , 2);
-			set_led( 3 , 2);
-			/*switch(sensor_feedback())
-					{
-					case 0:
-						escape_obstacle_right();
-						break;
-					case 1:
-						escape_obstacle_right();
-						break;
-					case 2:
-						break;
-					case 3:
-						break;
-					case 4:
-						break;
-					case 5:
-						break;
-					case 6:
-						escape_obstacle_left();
-						break;
-					case 7:
-						escape_obstacle_left();
-						break;
-					}*/
+			set_body_led(LED_ON);
+			avancer_ms(FINISH_MARGIN);
+			if(!first_collision)
+			{
+				epuck_scan_direction = analysing_situation();
+				first_collision = 1;
+			}
 			if(epuck_scan_direction == SCAN_LEFT){
 				reculer_ms(EPUCK_RADIUS);
+				set_body_led(LED_OFF);
 				set_led( 1 , 2);
 				scan_left();
 				set_led( 1 , 0);
 			}
 			if(epuck_scan_direction == SCAN_RIGHT){
 				reculer_ms(EPUCK_RADIUS);
+				set_body_led(0);
 				set_led( 3 , 2);
 				scan_right();
 				set_led( 3 , 0);

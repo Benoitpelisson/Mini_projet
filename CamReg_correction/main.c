@@ -16,6 +16,7 @@
 #include <ir_driver.h>
 #include <control_motor.h>
 #include <process_image.h>
+#include <TOF_driver.h>
 
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
@@ -60,11 +61,14 @@ int main(void)
 	motors_init();
 	//starts the ir sensors
 	proximity_start();
+	//starts the tof
+	VL53L0X_start();
 
 	//stars the threads for the pi regulator and the processing of the image
 	control_motor_start();
 	process_image_start();
 	ir_analyse_start();
+	tof_analyse_start();
 
 
     /* Infinite loop. */
