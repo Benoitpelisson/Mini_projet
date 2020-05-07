@@ -5,11 +5,12 @@
 
 #include <main.h>
 #include <camera/po8030.h>
+#include <leds.h>
 
 #include <process_image.h>
 
 #define THRESHOLD 25		//previously 40
-#define MARGIN 200 //previously 100
+#define MARGIN 100 //previously 100
 static uint8_t line_detected = 0;
 
 
@@ -34,11 +35,10 @@ uint8_t extract_info_line(uint8_t *buffer){
 
 	for(uint16_t i = 0 ; i < IMAGE_BUFFER_SIZE ; i++)
 	{
-		if(buffer[i] < THRESHOLD) //previously threshhold
+		if((buffer[i] < THRESHOLD) && ((i >= 200) && (i <= 440))) //previously threshhold WARNING, MODIFICATION OF CONDITION!!!
 		{
 			count++;
 		}
-
 	}
 	if(count >= MARGIN)
 	{
@@ -107,6 +107,11 @@ static THD_FUNCTION(ProcessImage, arg) {
 }
 
 uint8_t get_line_detected(void){
+	/*systime_t time;
+	time = chVTGetSystemTime();
+	set_body_led(2);
+	chThdSleepUntilWindowed(time, time + MS2ST(100));
+	set_body_led(0);*/
 	return line_detected;
 }
 

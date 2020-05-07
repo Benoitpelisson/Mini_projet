@@ -68,6 +68,14 @@ void reculer()
 	left_motor_set_speed(-VITESSE_MOTOR);
 }
 
+void stop(int stop_time){
+	systime_t time;
+	time = chVTGetSystemTime();
+	stop_motor();
+	chThdSleepUntilWindowed(time, time + MS2ST(stop_time));
+
+}
+
 void avancer_ms(uint16_t command)
 {
 	systime_t time;
@@ -85,6 +93,7 @@ void reculer_ms(uint16_t command)
 }
 
 void ninety_turn_right(void){
+	stop(100);
 	systime_t time;
 	turn_right();
 	time = chVTGetSystemTime();
@@ -101,7 +110,11 @@ void forward_turn_right(void){
 		chThdSleepUntilWindowed(time, time + MS2ST(INF_DIST));//DEFINE
 		distance += INF_DIST;
 		if(get_line_detected() == DETECTED)
+		{
+			//ninety_turn_right();
+			epuck_scan_direction = (1-epuck_scan_direction);
 			break;
+		}
 	}
 	turn_right();
 	time = chVTGetSystemTime();
@@ -109,6 +122,7 @@ void forward_turn_right(void){
 }
 
 void ninety_turn_left(void){
+	stop(100);
 	systime_t time;
 	turn_left();
 	time = chVTGetSystemTime();
@@ -125,7 +139,11 @@ void forward_turn_left(void){
 		chThdSleepUntilWindowed(time, time + MS2ST(INF_DIST));//DEFINE
 		distance += INF_DIST;
 		if(get_line_detected() == DETECTED)
+		{
+			//ninety_turn_left();
+			epuck_scan_direction = (1-epuck_scan_direction);
 			break;
+		}
 	}
 	turn_left();
 	time = chVTGetSystemTime();
@@ -137,13 +155,6 @@ void u_turn(void){
 	ninety_turn_left();
 }
 
-void stop(int stop_time){
-	systime_t time;
-	time = chVTGetSystemTime();
-	stop_motor();
-	chThdSleepUntilWindowed(time, time + MS2ST(stop_time));
-
-}
 uint8_t analysing_situation(void){
 	ninety_turn_left();
 	bool can_go_left = (1-get_line_detected()); //if no line, can go left
@@ -165,12 +176,6 @@ void scan_left(void){
 	{
 		ninety_turn_left();
 		comeback = 1;
-		if(get_line_detected() == DETECTED)//this condition in functions scan left and scan right is here to make the robot turn back when it reaches the end of the black rectangle
-		{
-			epuck_scan_direction = SCAN_RIGHT;
-			ninety_turn_left();
-			return;
-		}
 		forward_turn_left();
 		if(object_check() == DETECTED)//if we encounter an object during a u turn, this part "avoids" it
 		{
@@ -183,12 +188,6 @@ void scan_left(void){
 	{
 		ninety_turn_right();
 		comeback = 0;
-		if(get_line_detected() == DETECTED)
-		{
-			epuck_scan_direction = SCAN_RIGHT;
-			ninety_turn_right();
-			return;
-		}
 		forward_turn_right();
 		if(object_check() == DETECTED)//if we encounter an object during a u turn, this part "avoids" it
 		{
@@ -205,12 +204,6 @@ void scan_right(void){
 	{
 		ninety_turn_right();
 		comeback = 1;
-		if(get_line_detected() == DETECTED)
-		{
-			epuck_scan_direction = SCAN_LEFT;
-			ninety_turn_right();
-			return;
-		}
 		forward_turn_right();
 		if(object_check() == DETECTED)//if we encounter an object during a u turn, this part "avoids" it
 		{
@@ -223,12 +216,6 @@ void scan_right(void){
 	{
 		ninety_turn_left();
 		comeback = 0;
-		if(get_line_detected() == DETECTED)
-		{
-			epuck_scan_direction = SCAN_LEFT;
-			ninety_turn_left();
-			return;
-		}
 		forward_turn_left();
 		if(object_check() == DETECTED)//if we encounter an object during a u turn, this part "avoids" it
 		{
@@ -261,26 +248,33 @@ static THD_FUNCTION(ControlDirection, arg) {
 		{
 			if(get_line_detected() == DETECTED)
 			{
+				/*set_led(1,2);
+				stop(500);
+				set_led(1,0);*/
 				//avancer_ms(FINISH_MARGIN); //WARNING, THIS IS TO BE TESTED
 				if(!first_collision)
 				{
 					epuck_scan_direction = analysing_situation();
 					first_collision = 1;
 				}
-				if(epuck_scan_direction == SCAN_LEFT){
-					if(object_check() == DETECTED)//if tof didnt detect the obstacle, i.e the obstacle isnt directly in front of epuck
-						reculer_ms(EPUCK_RADIUS);
-					set_led( 1 , 2);
-					scan_left();
-					set_led( 1 , 0);
+				switch(epuck_scan_direction)
+				{
+					case SCAN_LEFT:
+					{
+						if(object_check() == DETECTED)//if tof didnt detect the obstacle, i.e the obstacle isnt directly in front of epuck
+							reculer_ms(EPUCK_RADIUS);
+						scan_left();
+						break;
+					}
+					case SCAN_RIGHT:
+					{
+						if(object_check() == DETECTED)
+							reculer_ms(EPUCK_RADIUS);
+						scan_right();
+						break;
+					}
 				}
-				if(epuck_scan_direction == SCAN_RIGHT){
-					if(object_check() == DETECTED)
-						reculer_ms(EPUCK_RADIUS);
-					set_led( 3 , 2);
-					scan_right();
-					set_led( 3 , 0);
-				}
+
 			}
 			else
 			{
@@ -299,16 +293,12 @@ static THD_FUNCTION(ControlDirection, arg) {
 			if(epuck_scan_direction == SCAN_LEFT){
 				reculer_ms(EPUCK_RADIUS);
 				set_body_led(LED_OFF);
-				set_led( 1 , 2);
 				scan_left();
-				set_led( 1 , 0);
 			}
 			if(epuck_scan_direction == SCAN_RIGHT){
 				reculer_ms(EPUCK_RADIUS);
 				set_body_led(0);
-				set_led( 3 , 2);
 				scan_right();
-				set_led( 3 , 0);
 			}
 
 		}

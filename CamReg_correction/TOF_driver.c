@@ -8,8 +8,8 @@
 
 #include <TOF_driver.h>
 
-#define IR_THRESHOLD 2000 //threshold is fixed in order for the robot to try and avoid touching objects, previously 3000
 #define DIST 70
+#define AVERAGE 4
 
 static uint8_t object = 0;
 static uint8_t sensor_number = 0;
@@ -25,9 +25,16 @@ static THD_FUNCTION(tof_analyse, arg) {
 
     while(1)
     {
+    	uint32_t averaged_distance = 0;
     	object = 0;
     	time = chVTGetSystemTime();
-    	if(VL53L0X_get_dist_mm() < DIST)
+    	for(uint8_t i = 0; i < AVERAGE ; i++)
+    	{
+    		averaged_distance += VL53L0X_get_dist_mm();
+    		//chThdSleepUntilWindowed(time, time + MS2ST(10));
+    	}
+    	averaged_distance = averaged_distance/AVERAGE;
+    	if(averaged_distance < DIST)
     	{
     		object = 1;
     	}
