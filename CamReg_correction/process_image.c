@@ -9,8 +9,8 @@
 
 #include <process_image.h>
 
-#define THRESHOLD 25		//previously 40
-#define MARGIN 100 //previously 100
+//#define THRESHOLD 25		//previously 40
+//#define MARGIN 50 //previously 100
 static uint8_t line_detected = 0;
 
 
@@ -107,11 +107,6 @@ static THD_FUNCTION(ProcessImage, arg) {
 }
 
 uint8_t get_line_detected(void){
-	/*systime_t time;
-	time = chVTGetSystemTime();
-	set_body_led(2);
-	chThdSleepUntilWindowed(time, time + MS2ST(100));
-	set_body_led(0);*/
 	return line_detected;
 }
 

@@ -8,13 +8,15 @@
 
 #include <TOF_driver.h>
 
-#define DIST 70
-#define AVERAGE 4
+/*#define DIST 70
+#define MARGIN 5
+#define MEASURES 20*/
 
 static uint8_t object = 0;
-static uint8_t sensor_number = 0;
+static uint8_t i = 0;
+static uint32_t count = 0;
 
-static THD_WORKING_AREA(watof_analyse, 1024);
+static THD_WORKING_AREA(watof_analyse, 256);
 static THD_FUNCTION(tof_analyse, arg) {
 
     chRegSetThreadName(__FUNCTION__);
@@ -25,23 +27,32 @@ static THD_FUNCTION(tof_analyse, arg) {
 
     while(1)
     {
-    	uint32_t averaged_distance = 0;
     	object = 0;
-    	time = chVTGetSystemTime();
-    	for(uint8_t i = 0; i < AVERAGE ; i++)
+    	uint32_t measure = VL53L0X_get_dist_mm();
+    	if(measure < DIST)
     	{
-    		averaged_distance += VL53L0X_get_dist_mm();
-    		//chThdSleepUntilWindowed(time, time + MS2ST(10));
+    		count++;
     	}
-    	averaged_distance = averaged_distance/AVERAGE;
-    	if(averaged_distance < DIST)
+    	if(count >= TOF_MARGIN)
     	{
     		object = 1;
     	}
-    	chThdSleepUntilWindowed(time, time + MS2ST(10));
+		i++;
+		if(i == (MEASURES-1))
+		{
+			i=0;
+			count=0;
+		}
+		time = chVTGetSystemTime();
+		chThdSleepUntilWindowed(time, time + MS2ST(100));
     }
 
 
+}
+
+uint32_t get_distance(void){
+	uint32_t distance_mm = VL53L0X_get_dist_mm();
+	return distance_mm;
 }
 
 uint8_t TOF_check (void)
