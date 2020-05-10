@@ -18,7 +18,6 @@ extern "C" {
 #define	SCAN_LEFT 0
 #define	SCAN_RIGHT 1
 #define EPUCK_RADIUS 539
-#define FINISH_MARGIN 800
 #define ESCAPE_OBJECT 300
 #define INF_DIST 10
 #define LED_ON 2
