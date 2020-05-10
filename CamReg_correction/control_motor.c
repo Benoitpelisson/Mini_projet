@@ -3,7 +3,7 @@
 #include <math.h>
 #include <usbcfg.h>
 #include <chprintf.h>
-
+#include <stdbool.h>
 
 #include <main.h>
 #include <motors.h>
@@ -13,63 +13,58 @@
 #include <leds.h>
 #include <TOF_driver.h>
 
-/*#define VITESSE_MOTOR 500
-#define DETECTED 1
-#define UNDETECTED 0
-#define	SCAN_LEFT 0
-#define	SCAN_RIGHT 1
-#define EPUCK_RADIUS 539
-#define FINISH_MARGIN 800
-#define ESCAPE_OBJECT 300
-#define INF_DIST 10
-#define LED_ON 2
-#define LED_OFF 0
-#define REAR_LEFT 4
-#define REAR_RIGHT 3
-#define NINETY_DEGREES 640
-#define WHEEL_CONST 0.13*/
-
 
 static bool comeback = 0;
 static uint8_t epuck_scan_direction;
 
 uint32_t distance_to_ms(uint32_t distance)
+//converts a distance to ms
+//param: distance in mm
+//return: distance in ms
 {
-	uint32_t ms = distance/(VITESSE_MOTOR * WHEEL_CONST);
+	uint32_t ms = distance/(MOTOR_SPEED * WHEEL_CONST);
 	return ms;
 }
 
 void stop_motor()
+//sets both motors speed to 0
 {
 	right_motor_set_speed(0);
 	left_motor_set_speed(0);
 }
 
 void turn_right()
+//sets motors speed so the robot turns to the right
 {
-	right_motor_set_speed(-VITESSE_MOTOR);
-	left_motor_set_speed(VITESSE_MOTOR);
+	right_motor_set_speed(-MOTOR_SPEED);
+	left_motor_set_speed(MOTOR_SPEED);
 }
 
 void turn_left()
+//sets motors speed so the robot turns to the left
 {
-	right_motor_set_speed(VITESSE_MOTOR);
-	left_motor_set_speed(-VITESSE_MOTOR);
+	right_motor_set_speed(MOTOR_SPEED);
+	left_motor_set_speed(-MOTOR_SPEED);
 }
 
-void avancer()
+void move_forward()
+//sets motors speed so the robot goes forward
 {
-	right_motor_set_speed(VITESSE_MOTOR);
-	left_motor_set_speed(VITESSE_MOTOR);
+	right_motor_set_speed(MOTOR_SPEED);
+	left_motor_set_speed(MOTOR_SPEED);
 }
 
-void reculer()
+void move_backward()
+//sets motors speed so the robot goes backward
 {
-	right_motor_set_speed(-VITESSE_MOTOR);
-	left_motor_set_speed(-VITESSE_MOTOR);
+	right_motor_set_speed(-MOTOR_SPEED);
+	left_motor_set_speed(-MOTOR_SPEED);
 }
 
-void stop(int stop_time){
+void stop(int stop_time)
+//stops the motors for stop_time milliseconds
+//param: stop_time in ms
+{
 	systime_t time;
 	time = chVTGetSystemTime();
 	stop_motor();
@@ -77,33 +72,41 @@ void stop(int stop_time){
 
 }
 
-void avancer_ms(uint16_t command)
+void move_forward_ms(uint16_t command)
+//the robot goes forward for command ms
+//param: command in ms
 {
 	systime_t time;
-	avancer();
+	move_forward();
 	time = chVTGetSystemTime();
 	chThdSleepUntilWindowed(time, time + MS2ST(command));
 }
 
-void reculer_ms(uint16_t command)
+void move_backward_ms(uint16_t command)
+//the robot goes backward for command ms
+//param: command in ms
 {
 	systime_t time;
-	reculer();
+	move_backward();
 	time = chVTGetSystemTime();
 	chThdSleepUntilWindowed(time, time + MS2ST(command));
 }
 
-void ninety_turn_right(void){
+void ninety_turn_right(void)
+//the robot does a ninety degrees right turn
+{
 	systime_t time;
 	turn_right();
 	time = chVTGetSystemTime();
 	chThdSleepUntilWindowed(time, time + MS2ST(NINETY_DEGREES));
 }
 
-void forward_turn_right(void){
+void forward_turn_right(void)
+//the robot goes forward and does a ninety degrees right turn
+{
 	systime_t time;
 	uint16_t distance = 0;
-	avancer();
+	move_forward();
 	while(distance < (2*EPUCK_RADIUS))//this loop is here to check if we encounter any line when the robot is doing a u-turn
 	{
 		time = chVTGetSystemTime();
@@ -114,9 +117,9 @@ void forward_turn_right(void){
 			epuck_scan_direction = (1-epuck_scan_direction);
 			break;
 		}
-		if(object_check() == DETECTED)//when doing a u-turn, f the ir sensors sense a collision we back up before finishing the u-turn
+		if(IR_check() == DETECTED)//when doing a u-turn, f the ir sensors sense a collision we back up before finishing the u-turn
 		{
-			reculer_ms(ESCAPE_OBJECT);
+			move_backward_ms(ESCAPE_OBJECT);
 			break;
 		}
 	}
@@ -125,17 +128,21 @@ void forward_turn_right(void){
 	chThdSleepUntilWindowed(time, time + MS2ST(NINETY_DEGREES));
 }
 
-void ninety_turn_left(void){
+void ninety_turn_left(void)
+//the robot does a ninety degrees left turn
+{
 	systime_t time;
 	turn_left();
 	time = chVTGetSystemTime();
 	chThdSleepUntilWindowed(time, time + MS2ST(NINETY_DEGREES));
 }
 
-void forward_turn_left(void){
+void forward_turn_left(void)
+//the robot goes forward and does a ninety degrees left turn
+{
 	systime_t time;
 	uint16_t distance = 0;
-	avancer();
+	move_forward();
 	while(distance < (2*EPUCK_RADIUS))//this loop is here to check if we encounter any line when the robot is doing a u-turn
 	{
 		time = chVTGetSystemTime();
@@ -146,9 +153,9 @@ void forward_turn_left(void){
 			epuck_scan_direction = (1-epuck_scan_direction);
 			break;
 		}
-		if(object_check() == DETECTED)
+		if(IR_check() == DETECTED)
 		{
-			reculer_ms(ESCAPE_OBJECT);
+			move_backward_ms(ESCAPE_OBJECT);
 			break;
 		}
 	}
@@ -157,18 +164,26 @@ void forward_turn_left(void){
 	chThdSleepUntilWindowed(time, time + MS2ST(NINETY_DEGREES));
 }
 
-void u_turn(void){
+void u_turn(void)
+//the robot does a 180 degrees left turn
+{
 	ninety_turn_left();
 	ninety_turn_left();
 }
 
+
+uint8_t analysing_situation(void)
 //this function checks for possibilities where the robot can go when it sees a line for the first time
-uint8_t analysing_situation(void){
+//return: scan direction of the robot
+{
+	bool can_go_left = 0;
+	bool can_go_right = 0;
+
 	ninety_turn_left();
-	bool can_go_left = (1-get_line_detected()); //if no line, can go left
+	can_go_left = (1-get_line_detected()); //if no line, can go left
 	stop(100);
 	u_turn();
-	bool can_go_right = (1-get_line_detected());
+	can_go_right = (1-get_line_detected());
 	stop(100);
 	ninety_turn_left();
 	stop(100);
@@ -176,10 +191,12 @@ uint8_t analysing_situation(void){
 		return SCAN_LEFT;
 	if(can_go_right)
 		return SCAN_RIGHT;
-	return SCAN_LEFT;
+	return SCAN_LEFT;//returns default scan direction
 }
 
-void scan_left(void){
+void scan_left(void)
+//in left direction state, performs necessary steps to cover ground from right to left
+{
 	if(!comeback) //if the robot is going, we make it do a left u turn
 	{
 		ninety_turn_left();
@@ -195,7 +212,9 @@ void scan_left(void){
 
 }
 
-void scan_right(void){
+void scan_right(void)
+//in right direction state, performs necessary steps to cover ground from right to left
+{
 	if(!comeback) //if the robot is going, we make it do a right u turn
 	{
 		ninety_turn_right();
@@ -212,7 +231,9 @@ void scan_right(void){
 }
 
 static THD_WORKING_AREA(waControlDirection, 256);
-static THD_FUNCTION(ControlDirection, arg) {
+static THD_FUNCTION(ControlDirection, arg)
+//main thread that manages the robot according to the constraints
+{
 
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -221,22 +242,21 @@ static THD_FUNCTION(ControlDirection, arg) {
     bool first_collision = 0;
 
     time = chVTGetSystemTime();
-    chThdSleepUntilWindowed(time, time + MS2ST(10000));//waits before starting in order to have the right setup
+    chThdSleepUntilWindowed(time, time + MS2ST(5000));//waits before starting in order to have the right setup
 
 
     while(1){
         time = chVTGetSystemTime();
-		if(TOF_check() == UNDETECTED)
+		if(TOF_check() == UNDETECTED)//if no obstacle is detected with TOF
 		{
-			if(get_line_detected() == DETECTED)
+			if(get_line_detected() == DETECTED)//if a line is detected with camera
 			{
-				//avancer_ms(FINISH_MARGIN);
-				if(!first_collision)
+				if(!first_collision)//if it is the first collision with a line
 				{
 					epuck_scan_direction = analysing_situation();
 					first_collision = 1;
 				}
-				switch(epuck_scan_direction)
+				switch(epuck_scan_direction)//line detected!: gives instructions to the robot
 				{
 					case SCAN_LEFT:
 					{
@@ -250,10 +270,10 @@ static THD_FUNCTION(ControlDirection, arg) {
 					}
 				}
 			}
-			else if(object_check() == DETECTED)//if tof didnt detect the obstacle, i.e the obstacle isnt directly in front of epuck
+			else if(IR_check() == DETECTED)//if TOF didnt detect the obstacle, IR sensors check for an object
 			{
-				reculer_ms(EPUCK_RADIUS);
-				switch(epuck_scan_direction)
+				move_backward_ms(EPUCK_RADIUS);
+				switch(epuck_scan_direction)//object detected!: gives instructions to the robot
 				{
 					case SCAN_LEFT:
 					{
@@ -267,40 +287,46 @@ static THD_FUNCTION(ControlDirection, arg) {
 					}
 				}
 			}
-			else
+			else//if nothing is detected, the robot moves forward
 			{
-					avancer();
+					move_forward();
 			}
 		}
-		else
+		else//if TOF detects an object
 		{
 			set_body_led(LED_ON);
-			avancer_ms(distance_to_ms(get_distance()));
-			if(!first_collision)
+			move_forward_ms(distance_to_ms(get_distance()));
+			if(!first_collision)//if it is the first collision with a obstacle
 			{
 				epuck_scan_direction = analysing_situation();
 				first_collision = 1;
 			}
-			reculer_ms(ESCAPE_OBJECT);
-			if(epuck_scan_direction == SCAN_LEFT)
+			move_backward_ms(ESCAPE_OBJECT);
+			switch(epuck_scan_direction)//object detected!: gives instructions to the robot
 			{
-				set_body_led(LED_OFF);
-				scan_left();
-			}
-			if(epuck_scan_direction == SCAN_RIGHT)
-			{
-				set_body_led(LED_OFF);
-				scan_right();
+				case SCAN_LEFT:
+				{
+					set_body_led(LED_OFF);
+					scan_left();
+					break;
+				}
+				case SCAN_RIGHT:
+				{
+					set_body_led(LED_OFF);
+					scan_right();
+					break;
+				}
 			}
 		}
-        //100Hz
-        chThdSleepUntilWindowed(time, time + MS2ST(10));
+        chThdSleepUntilWindowed(time, time + MS2ST(10));//thread frequency is 100Hz
     }
 }
 
 
 
-void control_motor_start(void){
+void control_motor_start(void)
+//starts the ControlDirection thread
+{
 	chThdCreateStatic(waControlDirection, sizeof(waControlDirection), NORMALPRIO, ControlDirection, NULL);
 }
 

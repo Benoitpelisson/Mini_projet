@@ -6,11 +6,8 @@
 #include <main.h>
 #include <camera/po8030.h>
 #include <leds.h>
-
 #include <process_image.h>
 
-//#define THRESHOLD 25		//previously 40
-//#define MARGIN 50 //previously 100
 static uint8_t line_detected = 0;
 
 
@@ -21,33 +18,32 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
  *  Returns the line's width extracted from the image buffer given
  *  Returns 0 if line not found
  */
-uint8_t extract_info_line(uint8_t *buffer){
+uint8_t extract_info_line(uint8_t *buffer)
+//this function analyses the image
+//param: pointer on the image *buffer
+//return: line_in_front
+{
 
 	uint8_t line_in_front = 0;
 	uint16_t count = 0;
-	//uint32_t mean = 0;
-	//check if there is a black line in front
-	/*for(uint16_t j =0 ; j < IMAGE_BUFFER_SIZE ; j++)
-	{
-		mean += buffer[j];
-	}
-	mean = mean/(IMAGE_BUFFER_SIZE);*/
 
 	for(uint16_t i = 0 ; i < IMAGE_BUFFER_SIZE ; i++)
 	{
-		if((buffer[i] < THRESHOLD) && ((i >= 200) && (i <= 440))) //previously threshhold WARNING, MODIFICATION OF CONDITION!!!
+		if((buffer[i] < THRESHOLD) && ((i >= 200) && (i <= 440))) //checks if a pixel in the center of the camera has a value inferior to THRESHOLD
 		{
 			count++;
 		}
 	}
-	if(count >= MARGIN)
+	if(count >= MARGIN)//if enough pixels have a weak intensity, we consider that there is a line in front
 	{
 		line_in_front = 1;
 	}
 	return line_in_front;
 }
 static THD_WORKING_AREA(waCaptureImage, 256);
-static THD_FUNCTION(CaptureImage, arg) {
+static THD_FUNCTION(CaptureImage, arg)
+//comes from tp4 and is used in the project
+{
 
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
@@ -70,14 +66,15 @@ static THD_FUNCTION(CaptureImage, arg) {
 
 
 static THD_WORKING_AREA(waProcessImage, 1024);
-static THD_FUNCTION(ProcessImage, arg) {
+static THD_FUNCTION(ProcessImage, arg)
+//comes from tp4 and is used in the project
+{
 
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
 
 	uint8_t *img_buff_ptr;
 	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
-	//bool send_to_computer = 1;
 
     while(1){
     	//waits until an image has been captured
@@ -95,22 +92,19 @@ static THD_FUNCTION(ProcessImage, arg) {
 		//Look if a black line is in front of the robot
 		line_detected = extract_info_line(image);
 
-
-
-		/*if(send_to_computer){
-			//sends to the computer the image
-			SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
-		}
-		//invert the bool
-		send_to_computer = !send_to_computer;*/
     }
 }
 
-uint8_t get_line_detected(void){
+uint8_t get_line_detected(void)
+//tells if a line is detected
+//return: global variable line_detected
+{
 	return line_detected;
 }
 
-void process_image_start(void){
+void process_image_start(void)
+//starts the two threads necessary to analyse an image
+{
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);
 	chThdCreateStatic(waCaptureImage, sizeof(waCaptureImage), NORMALPRIO, CaptureImage, NULL);
 }

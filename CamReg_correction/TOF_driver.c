@@ -8,22 +8,19 @@
 
 #include <TOF_driver.h>
 
-/*#define DIST 70
-#define MARGIN 5
-#define MEASURES 20*/
 
 static uint8_t object = 0;
 static uint8_t i = 0;
 static uint32_t count = 0;
 
 static THD_WORKING_AREA(watof_analyse, 256);
-static THD_FUNCTION(tof_analyse, arg) {
+static THD_FUNCTION(tof_analyse, arg)
+//this thread checks the values of the TOF sensor
+{
 
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
-
     systime_t time;
-
 
     while(1)
     {
@@ -33,7 +30,7 @@ static THD_FUNCTION(tof_analyse, arg) {
     	{
     		count++;
     	}
-    	if(count >= TOF_MARGIN)
+    	if(count >= TOF_MARGIN)//if TOF_MARGIN or more measures are inferior to DIST, we consider that there is an obtsacle
     	{
     		object = 1;
     	}
@@ -44,23 +41,30 @@ static THD_FUNCTION(tof_analyse, arg) {
 			count=0;
 		}
 		time = chVTGetSystemTime();
-		chThdSleepUntilWindowed(time, time + MS2ST(100));
+		chThdSleepUntilWindowed(time, time + MS2ST(100));//thread frequency 10Hz
     }
 
 
 }
 
-uint32_t get_distance(void){
+uint32_t get_distance(void)
+//gives the distance to the user
+//return: distance in mm
+{
 	uint32_t distance_mm = VL53L0X_get_dist_mm();
 	return distance_mm;
 }
 
 uint8_t TOF_check (void)
+//says if an object is detected
+//return: object
 {
 	return object;
 }
 
 
-void tof_analyse_start(void){
+void tof_analyse_start(void)
+//starts the TOF analyse thread
+{
 	chThdCreateStatic(watof_analyse, sizeof(watof_analyse), NORMALPRIO, tof_analyse, NULL);
 }

@@ -11,8 +11,8 @@
 void stop_motor(void);
 void turn_right(void);
 void turn_left(void);
-void avancer(void);
-void reculer(void);
+void move_forward(void);
+void move_backward(void);
 void control_motor_start(void);
 
 
